@@ -19,3 +19,14 @@ const DEFAULT_PRODUCTS = [
   {id:"p8",n:"Dije Virgen de Chiquinquirá",c:"Dijes",m:"Oro 18k",p:480000,o:["grado","diario"],tag:"Tradición"},
   {id:"p9",n:"Dije Esmeralda",c:"Dijes",m:"Plata 925",p:310000,o:["regalo","diario","grado"],tag:"Detalle ideal"}
 ];
+
+/*  ALMACENAMIENTO (localStorage) */
+const read = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch (e) { return d; } };
+const Store = {
+  products(){ const p = read("jo_products", null); return Array.isArray(p) && p.length ? p : DEFAULT_PRODUCTS; },
+  saveProducts(p){ localStorage.setItem("jo_products", JSON.stringify(p)); },
+  resetProducts(){ localStorage.removeItem("jo_products"); },
+  requests(){ return read("jo_requests", []); },
+  saveRequests(r){ localStorage.setItem("jo_requests", JSON.stringify(r)); },
+  addRequest(r){ const a = Store.requests(); a.unshift(r); Store.saveRequests(a); }
+};
