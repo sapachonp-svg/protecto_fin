@@ -120,3 +120,52 @@ function sede(i){
 }
 $(".tabs").onclick = e => { const b = e.target.closest("[data-s]"); if (b) sede(+b.dataset.s); };
 sede(0);
+/* ===== FORMULARIO DE CONTACTO ===== */
+$("#cf").addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = e.target, d = Object.fromEntries(new FormData(f)), out = $("#cmsg");
+  if (!d.name.trim() || !/^\S+@\S+\.\S+$/.test(d.email) || d.msg.trim().length < 5) {
+    out.textContent = "Revisa tu nombre, un correo válido y escribe tu mensaje."; return;
+  }
+  const r = {id: Date.now().toString(36), date: new Date().toLocaleString("es-CO"),
+             name: d.name.trim(), email: d.email.trim(), phone: d.phone.trim(), type: d.type, msg: d.msg.trim(), done: false};
+  Store.addRequest(r);
+  if (FORMSPREE_URL) {
+    try { await fetch(FORMSPREE_URL, {method:"POST", headers:{"Accept":"application/json","Content-Type":"application/json"}, body: JSON.stringify(r)}); } catch (_) {}
+  }
+  f.reset();
+  out.textContent = "✓ ¡Gracias " + r.name.split(" ")[0] + "! Recibimos tu solicitud y te contactaremos pronto.";
+});
+
+/* ===== CHATBOT IA (preguntas frecuentes) ===== */
+const FAQ = [
+  {k:["hola","buenas","buenos dias","buenas tardes"], a:"¡Hola! Soy el asistente de Joyas Oro y Esmeralda. Pregúntame por envíos, precios, tallas, personalizados o sedes."},
+  {k:["envio","domicilio","despacho","enviar"], a:"Hacemos envíos seguros y asegurados a todo el país. El tiempo depende de la ciudad; te lo confirmamos al cotizar por WhatsApp."},
+  {k:["oro 18","18k","pureza","certificad","autentic"], a:"Nuestras piezas en oro son de 18K y se entregan con certificado de pureza. Las esmeraldas son de origen colombiano (Boyacá)."},
+  {k:["esmeralda","muzo","piedra"], a:"Trabajamos esmeraldas naturales colombianas de Boyacá. Cada piedra se selecciona a mano y se engasta con técnica artesanal."},
+  {k:["precio","costo","cuanto","valor","barato"], a:"Tenemos piezas desde $220.000 COP hasta más de $4.000.000 COP. Prueba el Asesor IA de la página para ver una recomendación según tu presupuesto."},
+  {k:["talla","medida","tamano","dedo"], a:"Te ayudamos con la talla por WhatsApp: puedes medir un anillo que ya uses o visitar una de nuestras sedes."},
+  {k:["personaliz","grabado","disen","encargo","medida"], a:"Hacemos joyas personalizadas: eliges metal, piedra y nos cuentas tu idea en la sección «Taller personalizado»."},
+  {k:["sede","direccion","horario","ubicacion","donde","visitar","cita"], a:"Tenemos sedes en Medellín (Lun–Sáb 10:00–19:00) y Chiquinquirá (Lun–Sáb 9:00–18:00). Puedes agendar cita en la sección Sedes."},
+  {k:["garantia","devol","cambio","reclamo"], a:"Ofrecemos garantía de fabricación y políticas de cambio. Escríbenos por el formulario de contacto con tu número de pedido."},
+  {k:["cuidado","limpiar","limpieza","mantenimiento"], a:"Evita perfumes y cloro, límpialas con un paño suave y guárdalas por separado. Ofrecemos limpieza en nuestras sedes."},
+  {k:["pago","tarjeta","transferencia","nequi"], a:"Coordinamos el pago al cotizar por WhatsApp. Te indicamos los medios disponibles."},
+  {k:["sorteo","rifa","manilla laminada"], a:"Sigue nuestro Instagram y llena la encuesta rápida (al final de la página) para participar en el sorteo de la manilla laminada en oro."}
+];
+const norm = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const msgs = $("#chatMsgs");
+function say(t, who){ const d = document.createElement("div"); d.className = "msg " + who; d.textContent = t; msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight; }
+function reply(q){
+  const t = norm(q);
+  const hit = FAQ.find(f => f.k.some(w => t.includes(w)));
+  say(hit ? hit.a : "No estoy seguro de eso. ¿Quieres hablar con un asesor humano por WhatsApp? Escríbenos desde el botón verde de cualquier pieza o usa el formulario de contacto.", "bot");
+}
+function ask(q){ say(q, "me"); setTimeout(() => reply(q), 350); }
+$("#chatQuick").innerHTML = ["Envíos","Precios","Personalizados","Sedes","Cuidado"].map(x => `<button type="button">${x}</button>`).join("");
+$("#chatQuick").onclick = e => { if (e.target.tagName == "BUTTON") ask(e.target.textContent); };
+$("#chatFab").onclick = () => {
+  const b = $("#chatBox"); b.hidden = !b.hidden;
+  if (!b.hidden && !msgs.children.length) say("¡Hola! 👋 Soy el asistente de Joyas Oro y Esmeralda. ¿En qué te ayudo?", "bot");
+};
+$("#chatClose").onclick = () => $("#chatBox").hidden = true;
+$("#chatForm").onsubmit = e => { e.preventDefault(); const i = $("#chatText"), v = i.value.trim(); if (v) { ask(v); i.value = ""; } };
